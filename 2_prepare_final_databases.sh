@@ -26,8 +26,8 @@ echo "Using raw data from: $RAW_DIR"
 $DOCKER_CMD $DOCKER_IMAGE bash -c '
     set -euxo pipefail
     echo "--- STEP 2.1: Unpacking raw files ---"
-    gunzip -c /raw_data/*.fna.gz > /final_data/references/GRCh38.fa
-    gunzip -c /raw_data/viral.1.1.genomic.fna.gz > /final_data/references/viral_panel.fa
+    gunzip -c /raw_data/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz > /final_data/references/GRCh38.fa
+    gunzip -c /raw_data/*.fna.gz > /final_data/references/viral_panel.fa
     
     echo "--- STEP 2.2: Creating Human K-mers (slow step)... ---"
     bbmap.sh ref=/final_data/references/GRCh38.fa out=/final_data/references/human_kmers.fa k=31
