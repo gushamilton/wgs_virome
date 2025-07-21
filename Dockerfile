@@ -45,17 +45,17 @@ RUN apt-get update && apt-get install -y \
     unzip \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Miniconda (more reliable than Mambaforge for this use case)
-RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh \
-    && bash /tmp/miniconda.sh -b -p /opt/conda \
-    && rm /tmp/miniconda.sh
+# Install Mambaforge (using specific version for reliability)
+RUN wget https://github.com/conda-forge/miniforge/releases/download/23.11.0-0/Mambaforge-23.11.0-0-Linux-x86_64.sh -O /tmp/mambaforge.sh \
+    && bash /tmp/mambaforge.sh -b -p /opt/conda \
+    && rm /tmp/mambaforge.sh
 
 # Add conda to PATH
 ENV PATH="/opt/conda/bin:$PATH"
 
 # Create conda environment and install bioinformatics tools
-RUN conda create -n viral_env python=3.10 -y \
-    && conda install -n viral_env -c bioconda -c conda-forge \
+RUN mamba create -n viral_env python=3.10 -y \
+    && mamba install -n viral_env -c bioconda -c conda-forge \
     samtools=1.19 \
     fastp=0.23.4 \
     minimap2=2.26 \
