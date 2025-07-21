@@ -45,17 +45,17 @@ RUN apt-get update && apt-get install -y \
     unzip \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Mambaforge
-RUN curl -L -O "https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh" \
-    && bash Mambaforge-Linux-x86_64.sh -b -p /opt/conda \
-    && rm Mambaforge-Linux-x86_64.sh
+# Install Miniconda (more reliable than Mambaforge for this use case)
+RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh \
+    && bash /tmp/miniconda.sh -b -p /opt/conda \
+    && rm /tmp/miniconda.sh
 
 # Add conda to PATH
 ENV PATH="/opt/conda/bin:$PATH"
 
 # Create conda environment and install bioinformatics tools
-RUN mamba create -n viral_env python=3.10 -y \
-    && mamba install -n viral_env -c bioconda -c conda-forge \
+RUN conda create -n viral_env python=3.10 -y \
+    && conda install -n viral_env -c bioconda -c conda-forge \
     samtools=1.19 \
     fastp=0.23.4 \
     minimap2=2.26 \
@@ -70,6 +70,7 @@ RUN mamba create -n viral_env python=3.10 -y \
     seqtk=1.4 \
     htslib=1.19 \
     bcftools=1.19 \
+    jq \
     -y
 
 # Install Python packages
@@ -99,7 +100,7 @@ RUN chmod +x /scripts/viral_screen.sh \
 # Set environment variables
 ENV CONDA_DEFAULT_ENV=viral_env
 ENV PATH="/opt/conda/envs/viral_env/bin:$PATH"
-ENV PYTHONPATH="/scripts:$PYTHONPATH"
+ENV PYTHONPATH="/scripts"
 
 # Set entrypoint
 ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "viral_env", "/scripts/viral_screen.sh"] 
