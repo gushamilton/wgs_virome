@@ -96,8 +96,8 @@ else
     echo "  Downloading pre-built Kraken viral database..."
     aria2c -x 16 -s 16 -k 1M -o databases/kraken_viral.tar.gz "$KRAKEN_VIRAL_URL"
     echo "  Extracting Kraken database..."
-    tar -xzf databases/kraken_viral.tar.gz -C databases/
-    mv databases/k2_viral_20221209 databases/viral_kraken
+    mkdir -p databases/viral_kraken
+    tar -xzf databases/kraken_viral.tar.gz -C databases/viral_kraken
     rm databases/kraken_viral.tar.gz
     echo -e "  ${GREEN}✓ Kraken viral database is ready.${NC}"
 fi
