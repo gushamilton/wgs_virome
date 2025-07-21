@@ -61,11 +61,11 @@ mkdir -p "$OUT_DIR"/{references,databases}
 
 echo ""
 echo "STEP 1: Unpacking all reference files..."
-docker run --rm \
+docker run --rm --entrypoint bash \
     -v "$PWD/$RAW_DIR":/raw \
     -v "$PWD/$OUT_DIR":/final \
     "$DOCKER_IMAGE" \
-    bash -c "
+    -c "
         echo '  → Unpacking GRCh38...'
         gunzip -c /raw/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz > /final/references/GRCh38.fa
         
@@ -79,17 +79,17 @@ docker run --rm \
 
 echo ""
 echo "STEP 2: Creating human k-mer file (slow, ~30 min, needs 50 GB RAM)..."
-docker run --rm \
+docker run --rm --entrypoint bash \
     -v "$PWD/$OUT_DIR/references":/refs \
     "$DOCKER_IMAGE" \
-    bbmap.sh ref=/refs/GRCh38.fa out=/refs/human_kmers.fa k=31
+    -c "bbmap.sh ref=/refs/GRCh38.fa out=/refs/human_kmers.fa k=31"
 
 echo ""
 echo "STEP 3: Creating minimap2 index for CMV..."
-docker run --rm \
+docker run --rm --entrypoint bash \
     -v "$PWD/$OUT_DIR/references":/refs \
     "$DOCKER_IMAGE" \
-    minimap2 -d /refs/viral_panel.mmi /refs/viral_panel.fa
+    -c "minimap2 -d /refs/viral_panel.mmi /refs/viral_panel.fa"
 
 echo ""
 echo "=========================================="
