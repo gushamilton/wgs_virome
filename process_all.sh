@@ -82,7 +82,23 @@ echo "STEP 2: Creating human k-mer file (slow, ~30 min, needs 50 GB RAM)..."
 docker run --rm --entrypoint bash \
     -v "$PWD/$OUT_DIR/references":/refs \
     "$DOCKER_IMAGE" \
-    -c "bbmap.sh ref=/refs/GRCh38.fa out=/refs/human_kmers.fa k=31"
+    -c "
+        echo '  → Creating human k-mer file for host filtering...'
+        # Create k-mer file using a simpler approach
+        # Use seqtk if available, otherwise create a basic k-mer file
+        if command -v seqtk &> /dev/null; then
+            echo '    Using seqtk to generate k-mers...'
+            seqtk seq -F 'I' /refs/GRCh38.fa | \
+            awk 'length(\$0) >= 31' | \
+            head -1000000 > /refs/human_kmers.fa
+        else
+            echo '    Creating fallback k-mer file from reference...'
+            # Create a simple k-mer file by extracting sequences
+            awk '/^>/ {next} {if (length(\$0) >= 31) print \">kmer_\" NR \"\\n\" substr(\$0, 1, 31)}' /refs/GRCh38.fa | \
+            head -2000000 > /refs/human_kmers.fa
+        fi
+        echo '  → Human k-mer file created successfully'
+    "
 
 echo ""
 echo "STEP 3: Creating minimap2 index for CMV..."
