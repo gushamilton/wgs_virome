@@ -1,12 +1,17 @@
 #!/bin/bash
 
 # =============================================================================
-# ULTRA-SCALE VIRAL SCREENING PIPELINE (v1.1 - Corrected Logic)
+# ULTRA-SCALE VIRAL SCREENING PIPELINE (v1.2 - Explicit GRCh38)
 # =============================================================================
 #
 # DESCRIPTION:
 # Stream-based, parallelized pipeline for screening human WGS CRAMs for
 # viral sequences with minimal storage footprint and maximum speed.
+#
+# v1.2 Changes:
+# - Added explicit GRCh38 reference FASTA as an input argument. This is
+#   CRITICAL for CRAM decompression and makes the pipeline more robust
+#   and portable, removing the hidden dependency on a system-wide reference.
 #
 # v1.1 Changes:
 # - Corrected read extraction to a robust "Hybrid Strategy" (unmapped,
@@ -16,12 +21,8 @@
 # - Parallelized KrakenUniq and minimap2 alignment steps to run concurrently.
 #
 # USAGE:
-# ./viral_screen.sh <input_cram> <input_crai> <threads> <memory> <keep_viral_bam>
-# Example: ./viral_screen.sh sample.cram sample.crai 16 32g false
-#
-# AUTHOR: Viral-GWAS Project
-# VERSION: 1.1
-# DATE: January 2025
+# ./viral_screen.sh <input_cram> <input_crai> <grch38_fasta> <threads> <memory> <keep_viral_bam>
+# Example: ./viral_screen.sh sample.cram sample.crai ref.fa 16 32g false
 # =============================================================================
 
 set -euo pipefail
@@ -30,16 +31,23 @@ set -euo pipefail
 # INPUT VALIDATION
 # =============================================================================
 
-if [ "$#" -ne 5 ]; then
-    echo "Usage: $0 <input_cram> <input_crai> <threads> <memory> <keep_viral_bam>"
+if [ "$#" -ne 6 ]; then
+    echo "Usage: $0 <input_cram> <input_crai> <grch38_fasta> <threads> <memory> <keep_viral_bam>"
     exit 1
 fi
 
 INPUT_CRAM="$1"
 INPUT_CRAI="$2"
-THREADS="$3"
-MEMORY="$4"
-KEEP_VIRAL_BAM="$5"
+GRCH38_FASTA="$3"
+THREADS="$4"
+MEMORY="$5"
+KEEP_VIRAL_BAM="$6"
+
+# Check if GRCh38 reference exists
+if [ ! -f "$GRCH38_FASTA" ]; then
+    echo "Error: GRCh38 reference FASTA not found at '$GRCH38_FASTA'"
+    exit 1
+fi
 
 # =============================================================================
 # SETUP AND INITIALIZATION
@@ -67,6 +75,7 @@ echo "STAGES A-C: Starting piped extraction, QC, and host filtering..."
 # intermediate FASTQ files, significantly improving speed and reducing I/O.
 
 # 1. samtools view: Extracts reads using the "Hybrid Strategy".
+#    -T: Explicitly provides the reference FASTA for CRAM decompression.
 #    -e '...' filter: gets reads that are unmapped (f4), have an unmapped
 #      mate (f8), or have low mapping quality (mapq < 30).
 #    -F 2304: Excludes secondary (256) and supplementary (2048) alignments.
@@ -77,7 +86,7 @@ echo "STAGES A-C: Starting piped extraction, QC, and host filtering..."
 #    Note: This uses a reference k-mer set. For maximum performance, a
 #    pre-built Bloom filter can be used instead.
 
-samtools view -u -h -e 'flag.f4 || flag.f8 || mapq < 30' -F 2304 "$INPUT_CRAM" \
+samtools view -u -h -T "$GRCH38_FASTA" -e 'flag.f4 || flag.f8 || mapq < 30' -F 2304 "$INPUT_CRAM" \
     | samtools sort -n -@ "$THREADS" -T "/results/tmp/collate" - \
     | samtools fastq -@ "$THREADS" -1 >(
         fastp --stdin --interleaved_in \
