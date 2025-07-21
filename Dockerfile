@@ -63,7 +63,7 @@ RUN mamba create -n viral_env python=3.10 -y \
     bracken=2.8 \
     bbmap=39.06 \
     pigz=2.8 \
-    parallel=20240222 \
+    parallel \
     bwa=0.7.17 \
     blast=2.15.0 \
     bedtools=2.31.0 \
