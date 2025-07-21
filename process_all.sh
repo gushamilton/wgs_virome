@@ -73,8 +73,8 @@ docker run --rm --entrypoint bash \
         gunzip -c /raw/cmv.fna.gz > /final/references/viral_panel.fa
         
         echo '  → Setting up Kraken DB...'
-        tar -xzf /raw/k2_viral_20221209.tar.gz -C /final/databases
-        mv /final/databases/k2_viral_20221209 /final/databases/viral_kraken
+        mkdir -p /final/databases/viral_kraken
+        tar -xzf /raw/k2_viral_20221209.tar.gz -C /final/databases/viral_kraken
     "
 
 echo ""
