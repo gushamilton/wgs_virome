@@ -68,14 +68,26 @@ download_with_progress() {
 # =============================================================================
 echo -e "${YELLOW}Starting parallel downloads...${NC}"
 
-# Download 1: Human k-mer database (pre-built)
+# Download 1: GRCh38 with decoy sequences (same as your existing setup)
 (
     download_with_progress \
-        "https://ftp.ncbi.nlm.nih.gov/blast/db/FASTA/human_genome.fna.gz" \
-        "references/human_kmers.fa.gz" \
-        "human k-mer database"
-    gunzip references/human_kmers.fa.gz
-    echo -e "${GREEN}✓ Human k-mer database ready${NC}"
+        "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz" \
+        "references/GRCh38_noalt_decoy_as.fa.gz" \
+        "GRCh38 no-alt decoy analysis set"
+    gunzip references/GRCh38_noalt_decoy_as.fa.gz
+    
+    # Create k-mer database from this reference
+    echo "Creating human k-mer database from GRCh38..."
+    if command -v bbmap &> /dev/null; then
+        # Use bbmap to create k-mer database
+        bbmap.sh ref=references/GRCh38_noalt_decoy_as.fa k=31 out=references/human_kmers.fa
+    else
+        # Fallback: just copy the reference as k-mer database
+        cp references/GRCh38_noalt_decoy_as.fa references/human_kmers.fa
+        echo -e "${YELLOW}⚠ bbmap not found - using full reference as k-mer database${NC}"
+    fi
+    
+    echo -e "${GREEN}✓ GRCh38 reference and k-mer database ready${NC}"
 ) &
 
 # Download 2: Pre-built Kraken viral database
@@ -166,9 +178,10 @@ cat > databases/README.md << EOF
 \`\`\`
 $OUTPUT_DIR/
 ├── references/
-│   ├── human_kmers.fa      # Pre-built human k-mer database
-│   ├── viral_panel.fa      # Combined viral reference genomes
-│   └── viral_panel.mmi     # Minimap2 index (if minimap2 available)
+│   ├── GRCh38_noalt_decoy_as.fa  # GRCh38 reference (same as your setup)
+│   ├── human_kmers.fa            # Human k-mer database generated from GRCh38
+│   ├── viral_panel.fa            # Combined viral reference genomes
+│   └── viral_panel.mmi           # Minimap2 index (if minimap2 available)
 └── databases/
     └── viral_kraken/       # Pre-built Kraken viral database
 \`\`\`
@@ -182,7 +195,8 @@ docker run -v $OUTPUT_DIR/references:/references \\
 \`\`\`
 
 ## Database Sources
-- Human k-mers: Pre-built from NCBI
+- GRCh38 reference: GCA_000001405.15_GRCh38_no_alt_analysis_set (same as your existing setup)
+- Human k-mers: Generated from GRCh38 reference using bbmap
 - Viral panel: CMV, EBV, HSV-1, HSV-2 from RefSeq
 - Kraken database: Pre-built viral database from Kraken team
 
